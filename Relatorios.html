@@ -13,7 +13,8 @@
         h2, h3 { color: #1a73e8; margin: 0; }
         .grande { font-size: 55px; text-align: center; display: block; color: #1a73e8; font-weight: bold; margin: 10px 0; }
         .btn-voltar { text-decoration: none; background: #666; color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; }
-/* --- CÓDIGO DO BOTÃO E IMPRESSÃO --- */
+
+        /* --- CÓDIGO DO BOTÃO E IMPRESSÃO --- */
         .botoes-acao { display: flex; gap: 10px; align-items: center; }
         
         .btn-imprimir { 
@@ -43,9 +44,9 @@
     <div class="header">
         <h2 id="txtNome">📊 Meus Relatórios</h2>
         <div class="botoes-acao">
- <a href="Painel.html" class="btn-voltar">📊Voltar</a>
+            <a href="Painel.html" class="btn-voltar">📊 Voltar</a>
             <button onclick="window.print()" class="btn-imprimir">🖨️ Imprimir / Gerar PDF</button>
-            </div>
+        </div>
     </div>
 
     <div class="grid">
@@ -62,6 +63,11 @@
     </div>
 
     <div class="card" style="margin-top:20px;">
+        <h3>📈 Por Série / Ano</h3>
+        <div id="listaSeries">Carregando...</div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
         <h3>📚 Por Área de Conhecimento</h3>
         <div id="listaAreas">Carregando...</div>
     </div>
@@ -70,57 +76,64 @@
 <script>
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxXrSQVjDjz9zEE46OVSEYR5muSVCjGVLRG8PpJiYC8cFHB-coCd1avS6y2Yh3TJpPD/exec";
 
-   window.onload = function() {
-    // IMPORTANTE: Tem que ser exatamente 'nomeProfessor'
-    const profLogado = localStorage.getItem("nomeProfessor"); 
+    window.onload = function() {
+        const profLogado = localStorage.getItem("nomeProfessor"); 
 
-    if (!profLogado) {
-        alert("Sessão expirada. Faça login novamente.");
-        window.location.href = "Index.html"; 
-        return;
-    }
+        if (!profLogado) {
+            alert("Sessão expirada. Faça login novamente.");
+            window.location.href = "index.html"; 
+            return;
+        }
     
         document.getElementById("txtNome").innerText = "📊 Relatórios: " + profLogado;
 
         fetch(URL_SCRIPT + "?getRelatorios=true")
             .then(r => r.json())
             .then(dados => {
-                let esc = {}, ar = {}, mesTotal = 0;
+                let esc = {}, ar = {}, ser = {}, mesTotal = 0;
                 let mesAtual = new Date().getMonth();
                 const nomeBusca = profLogado.trim().toUpperCase();
 
                 dados.forEach(d => {
-                    // TÉCNICA DE SEGURANÇA: Tenta pegar pelo nome da propriedade OU pela letra da coluna
-                    // Coluna C (Professor), Coluna B (Escola), Coluna I (Área)
-                    const nomePlanilha = (d.professor || d.colC || "").toString().trim().toUpperCase();
-                    const escolaValor = d.escola || d.colB || "Outros";
-                    const areaValor = d.area || d.colI || "Não Definida";
+                    // Normalização do nome para comparação
+                    const nomePlanilha = (d.professor || "").toString().trim().toUpperCase();
 
                     if (nomePlanilha === nomeBusca) {
-                        // Soma Escola
+                        const escolaValor = d.escola || "Outros";
+                        const areaValor = d.area || "Não Definida";
+                        const serieValor = d.serie || "Não Informada";
+
+                        // Soma Escolas
                         esc[escolaValor] = (esc[escolaValor] || 0) + 1;
                         
-                        // Soma Área
+                        // Soma Áreas
                         ar[areaValor] = (ar[areaValor] || 0) + 1;
+
+                        // Soma Séries (Nova Contagem)
+                        ser[serieValor] = (ser[serieValor] || 0) + 1;
                         
                         // Soma Mês Atual
-                        const dataValor = d.data || d.colA; // Geralmente o ID/Data está na Coluna A
-                        if(dataValor) {
-                            let dataPlano = new Date(dataValor);
+                        if(d.data) {
+                            let dataPlano = new Date(d.data);
                             if(!isNaN(dataPlano) && dataPlano.getMonth() === mesAtual) mesTotal++;
                         }
                     }
                 });
 
-                // Mostrar Escolas
+                // Renderizar Escolas
                 document.getElementById("listaEscolas").innerHTML = Object.keys(esc).sort().map(k => 
                     `<div class="item"><span>${k}</span><span class="valor">${esc[k]}</span></div>`
-                ).join('') || "Nenhum plano encontrado para suas colunas.";
+                ).join('') || "Nenhum plano encontrado.";
 
-                // Mostrar Áreas
+                // Renderizar Áreas
                 document.getElementById("listaAreas").innerHTML = Object.keys(ar).sort().map(k => 
                     `<div class="item"><span>${k}</span><span class="valor">${ar[k]}</span></div>`
                 ).join('') || "Sem dados de área.";
+
+                // Renderizar Séries (Novo)
+                document.getElementById("listaSeries").innerHTML = Object.keys(ser).sort().map(k => 
+                    `<div class="item"><span>${k}</span><span class="valor">${ser[k]}</span></div>`
+                ).join('') || "Sem dados de série.";
 
                 document.getElementById("totalMes").innerText = mesTotal;
             })
