@@ -10,7 +10,7 @@
         
         h2 { color: #1a73e8; margin-bottom: 20px; }
         
-        /* ESTILO DOS CARDS (O QUE MUDOU) */
+        /* ESTILO DOS CARDS */
         #listaCards { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
         
         .card { 
@@ -31,7 +31,6 @@
         }
         .card.aberto .detalhes-expansivos { max-height: 1000px; padding: 15px; border: 1px solid #eee; }
 
-        /* Botões de Ação dentro do Card */
         .card-acoes { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .btn-acao { 
             flex: 1; min-width: 100px; padding: 10px; border: none; border-radius: 6px; 
@@ -42,15 +41,26 @@
         .btn-editar { background: #1a73e8; color: white; }
         .btn-pdf { background: #27ae60; color: white; }
         .btn-excluir { background: #fff; color: #d93025; border: 1px solid #d93025; }
-        .btn-excluir:hover { background: #fce8e6; }
         
         #statusBusca { padding: 20px; text-align: center; color: #666; font-weight: bold; }
 
-        /* REGRA DE IMPRESSÃO (MANTIDA ORIGINAL) */
+        /* --- CONFIGURAÇÕES DE IMPRESSÃO --- */
         @media print {
-            body * { visibility: hidden; }
-            #printableArea, #printableArea * { visibility: visible; }
-            #printableArea { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+            /* 1. IMPRESSÃO DO PDF OFICIAL (MANTIDA ORIGINAL) */
+            body:not(.imprimindo-lista) * { visibility: hidden; }
+            body:not(.imprimindo-lista) #printableArea, body:not(.imprimindo-lista) #printableArea * { visibility: visible; }
+            body:not(.imprimindo-lista) #printableArea { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+
+            /* 2. IMPRESSÃO DA LISTA DE CARDS (NOVA FUNÇÃO) */
+            body.imprimindo-lista * { visibility: visible; }
+            body.imprimindo-lista .card-acoes, 
+            body.imprimindo-lista header, 
+            body.imprimindo-lista #filtroBusca,
+            body.imprimindo-lista .btn-voltar { display: none !important; }
+            
+            body.imprimindo-lista .container { width: 100% !important; max-width: none !important; box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
+            body.imprimindo-lista .card { border: 1px solid #000 !important; break-inside: avoid; margin-bottom: 10px; }
+            body.imprimindo-lista .detalhes-expansivos { max-height: none !important; display: block !important; padding: 10px !important; background: white !important; }
         }
     </style>
 </head>
@@ -59,13 +69,19 @@
 <div class="container">
     <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
         <h2 style="margin: 0;">Meus Planejamentos</h2>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <a href="Painel.html" 
-               style="text-decoration: none; color: #5f6368; font-size: 14px; font-weight: 500; border: 2px solid #5f6368; padding: 6px 12px; border-radius: 5px;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <a href="Painel.html" class="btn-voltar"
+               style="text-decoration: none; color: #5f6368; font-size: 13px; font-weight: 500; border: 2px solid #5f6368; padding: 7px 10px; border-radius: 5px;">
                ⬅️ Painel
             </a>
+
+            <button onclick="imprimirListaCards()" 
+                    style="background-color: #5f6368; color: white; padding: 9px 12px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px;">
+                📋 Imprimir Lista
+            </button>
+
             <a href="Formulario.html" 
-               style="background-color: #27ae60; color: white; padding: 8px 14px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 14px;">
+               style="background-color: #27ae60; color: white; padding: 9px 12px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px;">
                + Novo Plano
             </a>
         </div>
@@ -97,7 +113,6 @@
         try {
             const res = await fetch(`${URL_SCRIPT}?getRegistros=true&professor=${nomeProfessor}`);
             let registros = await res.json();
-            
             registros.sort((a, b) => new Date(b.data) - new Date(a.data));
 
             const container = document.getElementById('listaCards');
@@ -112,13 +127,10 @@
 
             registros.forEach(reg => {
                 const dataFormatada = reg.data ? new Date(reg.data).toLocaleDateString('pt-BR') : "---";
-                
-                // Criando o Card
                 const card = document.createElement('div');
                 card.className = 'card';
-                // Toggle para abrir/fechar ao clicar (exceto nos botões)
                 card.onclick = (e) => {
-                    if(!e.target.classList.contains('btn-acao')) {
+                    if(!e.target.closest('.card-acoes')) {
                         card.classList.toggle('aberto');
                     }
                 };
@@ -126,14 +138,14 @@
                 card.innerHTML = `
                     <div class="card-header">
                         <span class="card-data">📅 ${dataFormatada}</span>
-                        <span style="font-size: 12px; background: #eef4ff; padding: 2px 8px; border-radius: 10px; color: #1a73e8;">${reg.area}</span>
+                        <span style="font-size: 11px; background: #eef4ff; padding: 2px 8px; border-radius: 10px; color: #1a73e8;">${reg.area}</span>
                     </div>
                     <span class="card-escola">${reg.escola}</span>
                     <small>👥 Turma: ${reg.turma}</small>
                     <div class="card-tema"><strong>Tema:</strong> ${reg.tema}</div>
                     
                     <div class="detalhes-expansivos">
-                        <p><strong>Habilidade (BNCC):</strong><br>${reg.habilidade}</p>
+                        <p><strong>BNCC:</strong><br>${reg.habilidade}</p>
                         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
                         <p><strong>Metodologia:</strong><br>${reg.metodologia}</p>
                     </div>
@@ -146,19 +158,23 @@
                 `;
                 container.appendChild(card);
             });
-
-        } catch (e) { 
-            document.getElementById('statusBusca').innerText = "Erro ao carregar dados. Tente novamente.";
-        }
+        } catch (e) { document.getElementById('statusBusca').innerText = "Erro ao carregar."; }
     }
 
-    // --- FUNÇÕES DE LÓGICA (MANTIDAS IGUAIS) ---
+    // --- NOVA FUNÇÃO: IMPRIMIR LISTA DE CARDS ---
+    function imprimirListaCards() {
+        document.body.classList.add('imprimindo-lista');
+        window.print();
+        setTimeout(() => { document.body.classList.remove('imprimindo-lista'); }, 1000);
+    }
+
+    // --- FUNÇÕES ORIGINAIS MANTIDAS ---
     function editarRegistro(reg) {
         window.location.href = `Formulario.html?idParaEditar=${reg.id}&linha=${reg.linha}`;
     }
 
     async function excluir(linha, tema) {
-        if(!confirm(`Deseja excluir permanentemente o plano: "${tema}"?`)) return;
+        if(!confirm(`Deseja excluir: "${tema}"?`)) return;
         const formData = new URLSearchParams();
         formData.append("acao", "EXCLUIR_REGISTRO");
         formData.append("linha", linha);
@@ -167,27 +183,22 @@
             document.getElementById('statusBusca').innerText = "Excluindo...";
             await fetch(URL_SCRIPT, { method: "POST", body: formData });
             carregarDados();
-        } catch (e) { alert("Erro ao excluir."); }
+        } catch (e) { alert("Erro."); }
     }
 
-    // --- FILTRO DE BUSCA PARA CARDS ---
     function filtrarCards() {
         const filtro = document.getElementById("filtroBusca").value.toUpperCase();
         const cards = document.getElementsByClassName("card");
         let achou = false;
-
         for (let i = 0; i < cards.length; i++) {
             const texto = cards[i].innerText.toUpperCase();
-            if (texto.indexOf(filtro) > -1) {
-                cards[i].style.display = ""; achou = true;
-            } else { cards[i].style.display = "none"; }
+            if (texto.indexOf(filtro) > -1) { cards[i].style.display = ""; achou = true; } 
+            else { cards[i].style.display = "none"; }
         }
-        const status = document.getElementById("statusBusca");
-        status.style.display = achou ? "none" : "block";
-        status.innerText = achou ? "" : "Nenhum resultado para sua busca.";
+        document.getElementById("statusBusca").style.display = achou ? "none" : "block";
     }
 
-    // --- FUNÇÃO DE IMPRESSÃO (A SUA ORIGINAL - NÃO MEXIDA!) ---
+    // --- SUA FUNÇÃO PDF ORIGINAL (IDENTIDADE VISUAL PRESERVADA) ---
     function gerarPDF(reg) {
         const logos = {
             "EMEIF MARIA MADALENA TORRES DANTAS": "https://lh3.googleusercontent.com/d/1K-Ih0PBzwMzmQXB7lWTZLQIZVifViHfL",
