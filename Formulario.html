@@ -17,9 +17,9 @@
         .bncc-box { background: #f8f9fa; padding: 18px; border-radius: 10px; border: 1px solid #e0e0e0; border-left: 6px solid #1a73e8; margin: 20px 0; }
         button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { background: #1557b0; }
-        #status { margin-top: 15px; text-align: center; font-weight: bold; padding: 10px; border-radius: 5px; }
-        .sucesso { background: #e6f4ea; color: #1e8e3e; } 
-        .erro { background: #fce8e6; color: #d93025; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; padding: 15px; border-radius: 8px; display: none; } /* Ajustado para começar oculto */
+        .sucesso { background: #e6f4ea; color: #1e8e3e; display: block !important; border: 1px solid #1e8e3e; } 
+        .erro { background: #fce8e6; color: #d93025; display: block !important; border: 1px solid #d93025; }
         .btn-voltar-topo { text-decoration: none; color: #1a73e8; font-weight: bold; display: inline-block; margin-bottom: 10px; }
     </style>
 </head>
@@ -87,7 +87,7 @@
     let nomeProfessor = localStorage.getItem('nomeProfessor');
 
     window.onload = async () => {
-        if(!nomeProfessor || !configPrivada) { window.location.href = "Index.html"; return; }
+        if(!nomeProfessor || !configPrivada) { window.location.href = "index.html"; return; }
         
         document.getElementById('infoProf').innerText = "👤 " + nomeProfessor;
         document.getElementById('infoEscola').innerText = "🏫 " + configPrivada.escola;
@@ -110,6 +110,7 @@
         } catch (e) { console.error(e); }
     };
 
+    // --- CARREGAR EDIÇÃO (MANTIDO) ---
     async function carregarEdicao(id) {
         document.getElementById('tituloPagina').innerText = "✏️ Editar Registro";
         const btn = document.getElementById('btnSalvar');
@@ -150,7 +151,7 @@
         }
     }
 
-    // FUNÇÕES DE FILTRO (MANTIDAS)
+    // --- FILTROS BNCC (MANTIDOS) ---
     function filtrarSeries() {
         const area = document.getElementById('area').value;
         const series = [...new Set(bancoBNCC.filter(i => i.area === area).map(i => i.serie))];
@@ -198,11 +199,10 @@
         document.getElementById('habilidade').innerHTML = '<option value="">Aguardando...</option>';
     }
 
-    // --- FUNÇÃO DE SALVAMENTO CORRIGIDA ---
+    // --- FUNÇÃO DE SALVAMENTO COM "RESET INTELIGENTE" ---
     document.getElementById('formPlanejamento').onsubmit = async (e) => {
         e.preventDefault();
 
-        // Validação de 15 dias (Mantida)
         const dataInput = document.getElementById('dataAula').value;
         const dataSelecionada = new Date(dataInput + 'T12:00:00');
         const hoje = new Date();
@@ -222,8 +222,10 @@
         const linhaParaEditar = urlParams.get('linha') || "";
 
         btn.disabled = true;
+        btn.innerText = "Salvando...";
         status.className = "";
-        status.innerText = "Salvando na planilha...";
+        status.innerText = "Enviando dados para a planilha...";
+        status.style.display = "block";
 
         const dados = {
             id: String(idParaEditar),
@@ -249,7 +251,6 @@
         for (const key in dados) { formData.append(key, dados[key]); }
 
         try {
-            // Mudança para 'no-cors' para evitar o erro de resposta falsa
             await fetch(URL_SCRIPT, { 
                 method: "POST", 
                 body: formData,
@@ -257,14 +258,37 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
 
+            // --- A MÁGICA DO RESET INTELIGENTE AQUI ---
             status.className = "sucesso";
-            status.innerText = "✅ Comando enviado! Redirecionando...";
-            setTimeout(() => { window.location.href = "Consulta.html"; }, 1500);
+            status.innerText = "✅ Salvo com sucesso! Você já pode preencher o próximo.";
+            
+            // Limpa apenas os campos de conteúdo
+            document.getElementById('dataAula').value = "";
+            document.getElementById('qtdAulas').value = "";
+            document.getElementById('tema').value = "";
+            document.getElementById('metodologia').value = "";
+            
+            // Volta o botão ao estado normal
+            btn.disabled = false;
+            btn.innerText = "Salvar Outro Planejamento";
+
+            // Se for edição, limpa a URL para o próximo salvamento ser um NOVO registro
+            if(idParaEditar) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+                document.getElementById('tituloPagina').innerText = "Planejamento de Aula";
+            }
+
+            // Move a tela para o topo para o professor ver a mensagem de sucesso
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Esconde a mensagem de sucesso após 5 segundos
+            setTimeout(() => { status.style.display = "none"; }, 5000);
 
         } catch (error) {
             status.className = "erro";
             status.innerText = "❌ Erro de conexão. Verifique o Script.";
             btn.disabled = false;
+            btn.innerText = "Tentar Salvar Novamente";
         }
     };
 </script>
