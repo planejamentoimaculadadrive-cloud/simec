@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Coordenação - 2026</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: #f4f7f6; padding: 20px; color: #333; }
+        
+        /* Cores Escolares: Azul Marinho e Branco */
+        .header-coord { 
+            max-width: 1250px; 
+            margin: 0 auto 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #003366; /* Azul Marinho Profissional */
+            padding: 20px; 
+            border-radius: 12px; 
+            color: white; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .container { max-width: 1250px; margin: 0 auto; }
+
+        /* Grade de Filtros */
+        .filtros-area { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 20px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 12px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            align-items: end;
+        }
+        
+        .campo-filtro label { display: block; font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #003366; text-transform: uppercase; }
+        select, input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ced4da; outline: none; background: #fff; font-size: 13px; transition: 0.3s; }
+        select:focus, input:focus { border-color: #003366; box-shadow: 0 0 0 3px rgba(0,51,102,0.1); }
+
+        /* Botão Limpar Filtros */
+        .btn-limpar {
+            background: #f8f9fa;
+            color: #555;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            height: 40px;
+        }
+        .btn-limpar:hover { background: #e2e6ea; color: #d93025; border-color: #d93025; }
+
+        /* Lista de Cards */
+        .lista-cards { display: grid; gap: 15px; }
+        .card { 
+            background: white; 
+            border-radius: 10px; 
+            padding: 18px; 
+            border-left: 6px solid #003366; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        
+        .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f1f1; padding-bottom: 10px; margin-bottom: 12px; }
+        .prof-name { font-weight: bold; color: #003366; text-transform: uppercase; font-size: 13px; }
+        .data-info { font-size: 12px; color: #666; font-weight: bold; }
+        
+        .badge-escola { background: #e7f0f8; color: #003366; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-bottom: 8px; display: inline-block; }
+        .turma-tag { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-left: 5px; }
+        .area-info { font-size: 12px; color: #28a745; font-weight: bold; display: block; margin-top: 8px; }
+
+        .detalhes-expansivel { 
+            display: none; 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-top: 1px dashed #ddd; 
+            background: #fcfcfc;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .card.aberto .detalhes-expansivel { display: block; }
+
+        .btn-voltar { background: white; color: #003366; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-voltar:hover { background: #e0e0e0; }
+        
+        #status { text-align: center; padding: 50px; color: #888; font-style: italic; font-size: 15px; }
+        
+        @media (max-width: 600px) {
+            .header-coord { flex-direction: column; gap: 15px; text-align: center; }
+            .filtros-area { grid-template-columns: 1fr 1fr; }
+            .btn-limpar { grid-column: span 2; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-coord">
+    <div>
+        <h1>🛡️ Área Técnica</h1>
+        <p>Sistema Unificado de Gestão Escolar 2026</p>
+    </div>
+    <button class="btn-voltar" onclick="window.location.href='Painel.html'">⬅ Voltar ao Painel</button>
+</div>
+
+<div class="container">
+    <div class="filtros-area">
+        <div class="campo-filtro">
+            <label>1. ESCOLA</label>
+            <select id="filtroEscola" onchange="atualizarInterface()">
+                <option value="">-- Todas --</option>
+            </select>
+        </div>
+        <div class="campo-filtro">
+            <label>2. TURMA</label>
+            <select id="filtroTurma" onchange="filtrarDados()">
+                <option value="">-- Todas --</option>
+            </select>
+        </div>
+        <div class="campo-filtro">
+            <label>3. PROFESSOR</label>
+            <select id="filtroProfessor" onchange="filtrarDados()">
+                <option value="">-- Todos --</option>
+            </select>
+        </div>
+        <div class="campo-filtro">
+            <label>4. BIMESTRE</label>
+            <select id="filtroBimestre" onchange="filtrarDados()">
+                <option value="">-- Todos --</option>
+            </select>
+        </div>
+        <div class="campo-filtro">
+            <label>5. DISCIPLINA</label>
+            <select id="filtroArea" onchange="filtrarDados()">
+                <option value="">-- Todas --</option>
+            </select>
+        </div>
+        <div class="campo-filtro">
+            <label>6. POR DATA</label>
+            <input type="date" id="filtroData" onchange="filtrarDados()">
+        </div>
+        <button class="btn-limpar" onclick="limparTodosFiltros()">🧹 LIMPAR</button>
+    </div>
+
+    <div id="status">Carregando dados pedagógicos...</div>
+    <div id="listaCards" class="lista-cards"></div>
+</div>
+
+<script>
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxXrSQVjDjz9zEE46OVSEYR5muSVCjGVLRG8PpJiYC8cFHB-coCd1avS6y2Yh3TJpPD/exec";
+    
+    let todosOsDados = [];
+
+    window.onload = async () => {
+        try {
+            const response = await fetch(URL_SCRIPT + "?getTodosPlanejamentos=true");
+            todosOsDados = await response.json();
+            popularFiltrosIniciais();
+            filtrarDados();
+        } catch (error) {
+            document.getElementById('status').innerText = "Erro ao carregar a base de dados.";
+        }
+    };
+
+    function popularFiltrosIniciais() {
+        const selEsc = document.getElementById('filtroEscola');
+        const selBim = document.getElementById('filtroBimestre');
+        const selArea = document.getElementById('filtroArea');
+
+        const escolas = [...new Set(todosOsDados.map(i => i.escola))].sort();
+        const bimestres = [...new Set(todosOsDados.map(i => i.bimestre))].sort();
+        const areas = [...new Set(todosOsDados.map(i => i.area))].sort();
+
+        escolas.forEach(e => { if(e) selEsc.innerHTML += `<option value="${e}">${e}</option>`; });
+        bimestres.forEach(b => { if(b) selBim.innerHTML += `<option value="${b}">${b}</option>`; });
+        areas.forEach(a => { if(a) selArea.innerHTML += `<option value="${a}">${a}</option>`; });
+        
+        atualizarDependentes();
+    }
+
+    function atualizarInterface() {
+        atualizarDependentes();
+        filtrarDados();
+    }
+
+    function atualizarDependentes() {
+        const escola = document.getElementById('filtroEscola').value;
+        const selProf = document.getElementById('filtroProfessor');
+        const selTurma = document.getElementById('filtroTurma');
+        
+        const valorProfAtual = selProf.value;
+        const valorTurmaAtual = selTurma.value;
+
+        selProf.innerHTML = '<option value="">-- Todos --</option>';
+        selTurma.innerHTML = '<option value="">-- Todas --</option>';
+        
+        let dadosFiltrados = escola ? todosOsDados.filter(item => item.escola === escola) : todosOsDados;
+        
+        const professoresUnicos = [...new Set(dadosFiltrados.map(item => item.professor))].sort();
+        const turmasUnicas = [...new Set(dadosFiltrados.map(item => item.turma))].sort();
+        
+        professoresUnicos.forEach(p => { if(p) selProf.innerHTML += `<option value="${p}">${p}</option>`; });
+        turmasUnicas.forEach(t => { if(t) selTurma.innerHTML += `<option value="${t}">${t}</option>`; });
+
+        // Tenta manter a seleção anterior se ela ainda existir na nova lista
+        selProf.value = valorProfAtual;
+        selTurma.value = valorTurmaAtual;
+    }
+
+    // FUNÇÃO PARA LIMPAR TUDO
+    function limparTodosFiltros() {
+        document.getElementById('filtroEscola').value = "";
+        document.getElementById('filtroBimestre').value = "";
+        document.getElementById('filtroArea').value = "";
+        document.getElementById('filtroData').value = "";
+        
+        // Reseta os dependentes primeiro para limpar as listas
+        atualizarDependentes();
+        
+        // Limpa a seleção de professor e turma que foram resetados pela função acima
+        document.getElementById('filtroProfessor').value = "";
+        document.getElementById('filtroTurma').value = "";
+        
+        filtrarDados();
+    }
+
+    function filtrarDados() {
+        const fEsc = document.getElementById('filtroEscola').value;
+        const fTurma = document.getElementById('filtroTurma').value;
+        const fProf = document.getElementById('filtroProfessor').value;
+        const fBim = document.getElementById('filtroBimestre').value;
+        const fArea = document.getElementById('filtroArea').value;
+        const fData = document.getElementById('filtroData').value;
+        
+        const container = document.getElementById('listaCards');
+        const status = document.getElementById('status');
+
+        let filtrados = todosOsDados;
+
+        if (fEsc) filtrados = filtrados.filter(i => i.escola === fEsc);
+        if (fTurma) filtrados = filtrados.filter(i => i.turma === fTurma);
+        if (fProf) filtrados = filtrados.filter(i => i.professor === fProf);
+        if (fBim) filtrados = filtrados.filter(i => i.bimestre === fBim);
+        if (fArea) filtrados = filtrados.filter(i => i.area === fArea);
+        
+        if (fData) {
+            const dataBusca = new Date(fData).toLocaleDateString('pt-BR');
+            filtrados = filtrados.filter(i => new Date(i.data).toLocaleDateString('pt-BR') === dataBusca);
+        }
+
+        container.innerHTML = "";
+        
+        if (filtrados.length === 0) {
+            status.style.display = "block";
+            status.innerText = "Nenhum planejamento encontrado com esses filtros.";
+            return;
+        }
+
+        status.style.display = "none";
+
+        filtrados.forEach(reg => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = function() { this.classList.toggle('aberto'); };
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="prof-name">👤 ${reg.professor}</span>
+                    <span class="data-info">📅 ${new Date(reg.data).toLocaleDateString('pt-BR')}</span>
+                </div>
+                <div class="card-body">
+                    <span class="badge-escola">${reg.escola}</span>
+                    <span class="turma-tag">${reg.turma}</span>
+                    <span class="area-info">📚 Disciplina: ${reg.area}</span>
+                    <p style="margin-top:10px; font-size:14px; color:#444;"><strong>Tema:</strong> ${reg.tema}</p>
+                </div>
+                <div class="detalhes-expansivel">
+                    <p><strong>Bimestre:</strong> ${reg.bimestre}</p>
+                    <hr style="margin:8px 0; border:0; border-top:1px solid #eee;">
+                    <p><strong>Habilidades BNCC:</strong><br>${reg.habilidade}</p>
+                    <hr style="margin:10px 0; border:0; border-top:1px dashed #ccc;">
+                    <p><strong>Metodologia de Aula:</strong><br>${reg.metodologia}</p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+</script>
+
+</body>
+</html>

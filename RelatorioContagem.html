@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contagem de Aulas - 2026</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: #f4f7f6; padding: 20px; color: #333; }
+        
+        .header-relatorio { 
+            max-width: 1100px; 
+            margin: 0 auto 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #003366; 
+            padding: 20px; 
+            border-radius: 12px; 
+            color: white; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        .filtros-area { 
+            background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); align-items: end;
+        }
+        
+        .campo-filtro label { display: block; font-size: 10px; font-weight: bold; margin-bottom: 5px; color: #003366; text-transform: uppercase; }
+        select, input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ced4da; font-size: 13px; outline: none; }
+        select:focus { border-color: #003366; }
+
+        .btn-limpar { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; height: 40px; transition: 0.3s; }
+        .btn-limpar:hover { color: #d93025; border-color: #d93025; background: #fff1f0; }
+
+        /* Estilo da Tabela */
+        .tabela-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #eef2f7; color: #003366; padding: 15px; font-size: 13px; text-transform: uppercase; border-bottom: 2px solid #003366; }
+        td { padding: 15px; border-bottom: 1px solid #f1f1f1; font-size: 14px; }
+        tr:hover { background: #f9fbff; }
+
+        .total-badge { background: #003366; color: white; padding: 6px 15px; border-radius: 20px; font-weight: bold; font-size: 15px; display: inline-block; min-width: 45px; text-align: center; }
+        
+        .btn-voltar { background: white; color: #003366; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #status { text-align: center; padding: 50px; color: #888; font-style: italic; }
+
+        @media (max-width: 600px) {
+            .header-relatorio { flex-direction: column; gap: 15px; text-align: center; }
+            .filtros-area { grid-template-columns: 1fr 1fr; }
+            .btn-limpar { grid-column: span 2; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-relatorio">
+    <div>
+        <h1>📈 Contagem de Registros</h1>
+        <p>Análise Quantitativa por Turma e Docente</p>
+    </div>
+    <button class="btn-voltar" onclick="window.location.href='Painel.html'">⬅ Voltar</button>
+</div>
+
+<div class="container">
+    <div class="filtros-area">
+        <div class="campo-filtro">
+            <label>1. Escola</label>
+            <select id="fEscola" onchange="atualizarInterface()"><option value="">-- Todas --</option></select>
+        </div>
+        <div class="campo-filtro">
+            <label>2. Turma</label>
+            <select id="fTurma" onchange="filtrar()"><option value="">-- Todas --</option></select>
+        </div>
+        <div class="campo-filtro">
+            <label>3. Bimestre</label>
+            <select id="fBimestre" onchange="filtrar()"><option value="">-- Todos --</option></select>
+        </div>
+        <div class="campo-filtro">
+            <label>4. Disciplina</label>
+            <select id="fArea" onchange="filtrar()"><option value="">-- Todas --</option></select>
+        </div>
+        <button class="btn-limpar" onclick="limpar()">🧹 LIMPAR</button>
+    </div>
+
+    <div id="status">Calculando estatísticas...</div>
+    
+    <div class="tabela-container">
+        <table id="tabelaResumo">
+            <thead>
+                <tr>
+                    <th>Professor(a)</th>
+                    <th>Contexto (Filtros)</th>
+                    <th style="text-align: center;">Total de Aulas</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxXrSQVjDjz9zEE46OVSEYR5muSVCjGVLRG8PpJiYC8cFHB-coCd1avS6y2Yh3TJpPD/exec";
+    let todosOsDados = [];
+
+    window.onload = async () => {
+        try {
+            const response = await fetch(URL_SCRIPT + "?getTodosPlanejamentos=true");
+            todosOsDados = await response.json();
+            popularFiltrosIniciais();
+            filtrar();
+        } catch (e) { document.getElementById('status').innerText = "Erro ao carregar a base de dados."; }
+    };
+
+    function popularFiltrosIniciais() {
+        const selEsc = document.getElementById('fEscola');
+        const selBim = document.getElementById('fBimestre');
+        const selArea = document.getElementById('fArea');
+
+        const escolas = [...new Set(todosOsDados.map(i => i.escola))].sort();
+        const bimestres = [...new Set(todosOsDados.map(i => i.bimestre))].sort();
+        const areas = [...new Set(todosOsDados.map(i => i.area))].sort();
+
+        escolas.forEach(e => { if(e) selEsc.innerHTML += `<option value="${e}">${e}</option>`; });
+        bimestres.forEach(b => { if(b) selBim.innerHTML += `<option value="${b}">${b}</option>`; });
+        areas.forEach(a => { if(a) selArea.innerHTML += `<option value="${a}">${a}</option>`; });
+        
+        atualizarTurmas();
+    }
+
+    function atualizarInterface() {
+        atualizarTurmas();
+        filtrar();
+    }
+
+    function atualizarTurmas() {
+        const escola = document.getElementById('fEscola').value;
+        const selTurma = document.getElementById('fTurma');
+        selTurma.innerHTML = '<option value="">-- Todas --</option>';
+        
+        let dadosFiltrados = escola ? todosOsDados.filter(i => i.escola === escola) : todosOsDados;
+        const turmasUnicas = [...new Set(dadosFiltrados.map(i => i.turma))].sort();
+        
+        turmasUnicas.forEach(t => { if(t) selTurma.innerHTML += `<option value="${t}">${t}</option>`; });
+    }
+
+    function filtrar() {
+        const esc = document.getElementById('fEscola').value;
+        const turma = document.getElementById('fTurma').value;
+        const bim = document.getElementById('fBimestre').value;
+        const area = document.getElementById('fArea').value;
+
+        let filtrados = todosOsDados;
+        if (esc) filtrados = filtrados.filter(i => i.escola === esc);
+        if (turma) filtrados = filtrados.filter(i => i.turma === turma);
+        if (bim) filtrados = filtrados.filter(i => i.bimestre === bim);
+        if (area) filtrados = filtrados.filter(i => i.area === area);
+
+        // Agrupar contagem por Professor
+        const contagem = {};
+        filtrados.forEach(reg => {
+            contagem[reg.professor] = (contagem[reg.professor] || 0) + 1;
+        });
+
+        renderizarTabela(contagem, { esc, turma, bim, area });
+    }
+
+    function renderizarTabela(contagem, filtros) {
+        const corpo = document.getElementById('corpoTabela');
+        const status = document.getElementById('status');
+        corpo.innerHTML = "";
+        
+        const professores = Object.keys(contagem).sort();
+
+        if (professores.length === 0) {
+            status.style.display = "block";
+            status.innerText = "Nenhum registro encontrado para esta combinação de filtros.";
+            return;
+        }
+
+        status.style.display = "none";
+        
+        // Criar texto do contexto para a segunda coluna
+        let contexto = [];
+        if(filtros.esc) contexto.push(filtros.esc);
+        if(filtros.turma) contexto.push(filtros.turma);
+        if(filtros.bim) contexto.push(filtros.bim);
+        const textoContexto = contexto.length > 0 ? contexto.join(" | ") : "Geral (Sem filtros)";
+
+        professores.forEach(prof => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>👤 ${prof}</strong></td>
+                <td><span style="font-size:12px; color:#666">${textoContexto}</span></td>
+                <td style="text-align: center;"><span class="total-badge">${contagem[prof]}</span></td>
+            `;
+            corpo.appendChild(tr);
+        });
+    }
+
+    function limpar() {
+        document.getElementById('fEscola').value = "";
+        document.getElementById('fBimestre').value = "";
+        document.getElementById('fArea').value = "";
+        atualizarTurmas(); // Isso limpa o campo de turma também
+        filtrar();
+    }
+</script>
+</body>
+</html>

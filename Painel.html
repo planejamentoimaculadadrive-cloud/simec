@@ -2,69 +2,117 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Painel do Professor - 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - 2026</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background: #f0f2f5; color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+
+        .header { text-align: center; margin-bottom: 30px; margin-top: 10px; }
+        .header h1 { color: #003366; font-size: 26px; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 15px; }
+
+        /* Grade adaptada para 5 botões */
+        .container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+            max-width: 1000px; 
+            width: 100%; 
+        }
+
+        .card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06); 
+            cursor: pointer; 
+            transition: 0.3s; 
+            border-bottom: 5px solid #ccc;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-color: #003366; }
         
-        /* AJUSTE: Mudei de 18% para 100% para a barra ocupar todo o topo */
-        .nav { width: 35%; background: #1a73e8; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* AJUSTE: Aumentei a largura máxima para os 3 cards caberem melhor lado a lado */
-        .container { max-width: 900px; width: 95%; margin-top: 50px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding-bottom: 30px; }
-        
-        .card { background: white; padding: 30px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; border: 1px solid #eee; text-decoration: none; color: #333; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #1a73e8; }
-        .card i { font-size: 40px; color: #1a73e8; display: block; margin-bottom: 15px; font-style: normal; }
-        .card h3 { margin: 0; font-size: 18px; }
-        .card p { color: #666; font-size: 14px; margin-top: 10px; }
-        
-        .btn-sair { background: #d93025; color: white; border: none; padding: 15px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-sair:hover { background: #a51d12; }
+        .card i { font-size: 35px; display: block; margin-bottom: 12px; }
+        .card h3 { color: #003366; margin-bottom: 8px; font-size: 18px; }
+        .card p { color: #777; font-size: 13px; line-height: 1.4; }
+
+        /* Cores das Bordas para Identificação Rápida */
+        .border-prof { border-color: #28a745; }    /* Verde */
+        .border-admin { border-color: #6c757d; }   /* Cinza */
+        .border-relat { border-color: #17a2b8; }   /* Azul Claro */
+        .border-tecn { border-color: #d93025; }    /* Vermelho */
+        .border-count { border-color: #f1c40f; }   /* Amarelo */
+
+        .btn-sair { 
+            margin-top: 40px; 
+            padding: 12px 40px; 
+            background: #d93025; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+
+        @media (max-width: 600px) {
+            .container { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
-<div class="nav">
-    <span id="boasVindas">Bem-vindo, Professor(a)</span>
-    <button class="btn-sair" onclick="sair()">Sair</button>
+<div class="header">
+    <h1>Sistema Pedagógico 2026</h1>
+    <p>Gestão Escolar Unificada</p>
 </div>
 
 <div class="container">
-    <a href="Formulario.html" class="card">
+    <div class="card border-prof" onclick="window.location.href='Formulario.html'">
         <i>📝</i>
-        <h3>Novo Planejamento</h3>
-        <p>Registrar novas aulas e selecionar habilidades BNCC.</p>
-    </a>
+        <h3>Registrar Planejamento</h3>
+        <p>Lançamento de planejamentos diários e atividades.</p>
+    </div>
 
-    <a href="Consulta.html" class="card">
-        <i>🔍</i>
-        <h3>Meus Registros</h3>
-        <p>Buscar, editar, excluir e gerar PDF dos planos feitos.</p>
-    </a>
+    <div class="card border-admin" onclick="window.location.href='Consulta.html'">
+        <i>⚙️</i>
+        <h3>Planejamento do Professor</h3>
+        <p>Configurações de sistema e gerenciamento de acessos.</p>
+    </div>
 
-   <a href="Relatorios.html" class="card">
+    <div class="card border-relat" onclick="window.location.href='Relatorios.html'">
         <i>📊</i>
-        <h3>Relatórios GERAIS</h3>
-        <p>Visualizar estatísticas por escola e áreas de conhecimento.</p>
-    </a>
+        <h3>Relatórios do Professor</h3>
+        <p>Estatísticas gerais e visualização de dados por série.</p>
+    </div>
+
+    <div class="card border-tecn" onclick="validarSenha('Coordenacao.html')">
+        <i>🛡️</i>
+        <h3>Consulta/Planos Coordenador</h3> 
+        <p>Análise detalhada de BNCC e Metodologias (Coordenação).</p>
+    </div>
+
+    <div class="card border-count" onclick="validarSenha('RelatorioContagem.html')">
+        <i>📈</i>
+        <h3>Consulta/Aulas Coordenador</h3>
+        <p>Ranking e total de registros por docente e turma.</p>
+    </div>
 </div>
 
-<script>
-    window.onload = () => {
-        const nome = localStorage.getItem('nomeProfessor');
-        if(!nome) {
-            window.location.href = "Index.html";
-        } else {
-            document.getElementById('boasVindas').innerText = "Professor(a): " + nome;
-        }
-    };
+<button class="btn-sair" onclick="window.location.href='index.html'">SAIR DO SISTEMA</button>
 
-    function sair() {
-        if(confirm("Deseja realmente sair?")) {
-            localStorage.clear();
-            window.location.href = "Index.html";
+<script>
+    function validarSenha(pagina) {
+        const senhaCorreta = "gestao2026";
+        const informada = prompt("Acesso Restrito à Coordenação\nDigite a senha:");
+
+        if (informada === senhaCorreta) {
+            window.location.href = pagina;
+        } else if (informada !== null) {
+            alert("Senha incorreta!");
         }
     }
 </script>
+
 </body>
 </html>

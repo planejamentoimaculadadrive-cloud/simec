@@ -10,10 +10,11 @@
             font-family: 'Segoe UI', sans-serif; 
             background: #f0f2f5; 
             display: flex; 
-            flex-direction: column; /* Ajustado para alinhar créditos abaixo */
+            flex-direction: column; 
             justify-content: center; 
             align-items: center; 
             height: 100vh; 
+            margin: 0; 
         }
         .login-card { 
             background: #fff; 
@@ -51,13 +52,34 @@
             font-weight: bold; 
             cursor: pointer; 
             margin-top: 10px;
+            transition: 0.3s;
         }
         button:hover { background-color: #1557b0; }
+        
+        /* NOVO: Estilo para a área administrativa */
+        .admin-divider {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .btn-admin {
+            background-color: #fff;
+            color: #5f6368;
+            border: 1px solid #dadce0;
+            font-size: 12px;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        .btn-admin:hover {
+            background-color: #f8f9fa;
+            color: #1a73e8;
+            border-color: #1a73e8;
+        }
+
         #mensagem { margin-top: 15px; font-size: 13px; padding: 10px; border-radius: 5px; display: none; }
         .erro { display: block !important; background: #fce8e6; color: #d93025; border: 1px solid #f1c40f; }
         .sucesso { display: block !important; background: #e6f4ea; color: #1e8e3e; }
         
-        /* Estilo dos Créditos */
         .dev-container { margin-top: 20px; text-align: center; }
         .logo-Desenvolvedor { max-width: 40px; border-radius: 50%; margin-bottom: 5px; }
         .credito { color: #5f6368; font-size: 12px; font-weight: 600; }
@@ -81,26 +103,31 @@
 
         <div class="input-group">
             <label for="senha">Senha de Acesso</label>
-            <input type="password" id="senha" placeholder="Digite a Senha de 8 digitos">
+            <input type="password" id="senha" placeholder="Digite a Senha de 8 dígitos">
         </div>
 
         <button id="btnEntrar" onclick="executarLogin()">Entrar no Sistema</button>
+
+        <div class="admin-divider">
+            <button class="btn-admin" onclick="window.location.href='Painel.html'">
+                ⚙️ ACESSO ADMINISTRATIVO
+            </button>
+        </div>
+
         <div id="mensagem"></div>
     </div> 
 
     <div class="dev-container"> 
         <img src="https://lh3.googleusercontent.com/u/0/d/1WYPSaHqtqs8On1ikFot8z6r4q5gfBf4p" alt="Logo do Desenvolvedor" class="logo-Desenvolvedor">
-        <p class="credito">Desenvolvido por: @Erivaldo Silva</p> 
+        <p class="credito">v3 - Desenvolvida por: @Erivaldo Silva.</p> 
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxXrSQVjDjz9zEE46OVSEYR5muSVCjGVLRG8PpJiYC8cFHB-coCd1avS6y2Yh3TJpPD/exec";
 
         window.onload = async () => {
-            // MUDANÇA 1: Limpa logins antigos ao abrir a tela
             localStorage.clear();
 
-            // MUDANÇA 2: Permite apertar ENTER para entrar
             document.getElementById('senha').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') { executarLogin(); }
             });
