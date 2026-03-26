@@ -17,10 +17,13 @@
         .bncc-box { background: #f8f9fa; padding: 18px; border-radius: 10px; border: 1px solid #e0e0e0; border-left: 6px solid #1a73e8; margin: 20px 0; }
         button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         button:hover { background: #1557b0; }
-        #status { margin-top: 15px; text-align: center; font-weight: bold; padding: 15px; border-radius: 8px; display: none; } /* Ajustado para começar oculto */
+        #status { margin-top: 15px; text-align: center; font-weight: bold; padding: 15px; border-radius: 8px; display: none; }
         .sucesso { background: #e6f4ea; color: #1e8e3e; display: block !important; border: 1px solid #1e8e3e; } 
         .erro { background: #fce8e6; color: #d93025; display: block !important; border: 1px solid #d93025; }
         .btn-voltar-topo { text-decoration: none; color: #1a73e8; font-weight: bold; display: inline-block; margin-bottom: 10px; }
+        
+        /* Ajuste específico para o novo campo de Tema */
+        #tema { resize: vertical; min-height: 80px; margin-bottom: 15px; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -71,7 +74,8 @@
         </div>
 
         <label>Tema / Subtema</label>
-        <input type="text" id="tema" required style="margin-bottom: 15px;">
+        <textarea id="tema" rows="3" required placeholder="Digite o tema e use Enter para separar subtemas..."></textarea>
+        
         <label>Sugestões Metodológicas</label>
         <textarea id="metodologia" rows="4" required></textarea>
 
@@ -103,55 +107,64 @@
             selArea.innerHTML = '<option value="">-- Selecione a Área --</option>';
             areas.forEach(a => selArea.innerHTML += `<option value="${a}">${a}</option>`);
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const idParaEditar = urlParams.get('idParaEditar');
-            if (idParaEditar) { carregarEdicao(idParaEditar); }
+            const dadosParaEditar = JSON.parse(localStorage.getItem('dadosEdicao'));
+            if (dadosParaEditar) {
+                preencherCamposEdicao(dadosParaEditar);
+                localStorage.removeItem('dadosEdicao');
+            } else {
+                const urlParams = new URLSearchParams(window.location.search);
+                const idParaEditar = urlParams.get('idParaEditar');
+                if (idParaEditar) { carregarEdicao(idParaEditar); }
+            }
 
         } catch (e) { console.error(e); }
     };
 
-    // --- CARREGAR EDIÇÃO (MANTIDO) ---
-    async function carregarEdicao(id) {
+    function preencherCamposEdicao(d) {
         document.getElementById('tituloPagina').innerText = "✏️ Editar Registro";
         const btn = document.getElementById('btnSalvar');
         btn.innerText = "Sincronizando BNCC...";
         btn.disabled = true;
 
-        const res = await fetch(`${URL_SCRIPT}?getRegistros=true&professor=${nomeProfessor}`);
-        const registros = await res.json();
-        const d = registros.find(r => r.id === id);
+        if (d.data) {
+            let dataBruta = d.data.split('T')[0];
+            document.getElementById('dataAula').value = dataBruta;
+        }
+        document.getElementById('qtdAulas').value = d.aulas || "";
+        
+        // Carrega o Tema (agora Textarea) mantendo as quebras de linha
+        document.getElementById('tema').value = d.tema || "";
+        document.getElementById('metodologia').value = d.metodologia || "";
 
-        if (d) {
-            if(d.data) {
-                let dataBruta = d.data.split('T')[0];
-                document.getElementById('dataAula').value = dataBruta;
-            }
-            document.getElementById('qtdAulas').value = d.aulas || "";
-            document.getElementById('tema').value = d.tema || "";
-            document.getElementById('metodologia').value = d.metodologia || "";
-
-            setTimeout(() => {
-                const disp = (idCampo, valor) => { 
-                    const el = document.getElementById(idCampo); 
-                    if(el) { el.value = valor; el.dispatchEvent(new Event('change')); }
-                };
-                disp('area', d.area);
-                setTimeout(() => { disp('serie', d.serie);
-                    setTimeout(() => { disp('pratica', d.pratica);
-                        setTimeout(() => { disp('objeto', d.objeto);
-                            setTimeout(() => { 
-                                document.getElementById('habilidade').value = d.habilidade; 
-                                btn.innerText = "Atualizar Planejamento";
-                                btn.disabled = false;
-                            }, 150);
+        setTimeout(() => {
+            const disp = (idCampo, valor) => { 
+                const el = document.getElementById(idCampo); 
+                if(el) { el.value = valor; el.dispatchEvent(new Event('change')); }
+            };
+            disp('area', d.area);
+            setTimeout(() => { disp('serie', d.serie);
+                setTimeout(() => { disp('pratica', d.pratica);
+                    setTimeout(() => { disp('objeto', d.objeto);
+                        setTimeout(() => { 
+                            document.getElementById('habilidade').value = d.habilidade; 
+                            btn.innerText = "Atualizar Planejamento";
+                            btn.disabled = false;
+                            document.getElementById('formPlanejamento').setAttribute('data-id', d.id || "");
+                            document.getElementById('formPlanejamento').setAttribute('data-linha', d.linha || "");
                         }, 150);
                     }, 150);
                 }, 150);
-            }, 300);
-        }
+            }, 150);
+        }, 300);
     }
 
-    // --- FILTROS BNCC (MANTIDOS) ---
+    async function carregarEdicao(id) {
+        const res = await fetch(`${URL_SCRIPT}?getRegistros=true&professor=${nomeProfessor}`);
+        const registros = await res.json();
+        const d = registros.find(r => r.id === id);
+        if (d) preencherCamposEdicao(d);
+    }
+
     function filtrarSeries() {
         const area = document.getElementById('area').value;
         const series = [...new Set(bancoBNCC.filter(i => i.area === area).map(i => i.serie))];
@@ -199,7 +212,6 @@
         document.getElementById('habilidade').innerHTML = '<option value="">Aguardando...</option>';
     }
 
-    // --- FUNÇÃO DE SALVAMENTO COM "RESET INTELIGENTE" ---
     document.getElementById('formPlanejamento').onsubmit = async (e) => {
         e.preventDefault();
 
@@ -209,17 +221,15 @@
         hoje.setHours(0,0,0,0);
         const diffDias = Math.ceil((dataSelecionada - hoje) / (1000 * 60 * 60 * 24));
 
-        if (diffDias < -15 || diffDias > 15) {
+        if (diffDias < -30 || diffDias > 15) {
             alert("⚠️ BLOQUEIO DE DATA: Você só pode registrar entre 15 dias atrás e 15 dias à frente.");
             return;
         }
 
         const btn = document.getElementById('btnSalvar');
         const status = document.getElementById('status');
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        const idParaEditar = urlParams.get('idParaEditar') || "";
-        const linhaParaEditar = urlParams.get('linha') || "";
+        const idParaEditar = e.target.getAttribute('data-id') || "";
+        const linhaParaEditar = e.target.getAttribute('data-linha') || "";
 
         btn.disabled = true;
         btn.innerText = "Salvando...";
@@ -242,7 +252,7 @@
             pratica: document.getElementById('pratica').value,
             objeto: document.getElementById('objeto').value,
             habilidade: document.getElementById('habilidade').value,
-            tema: document.getElementById('tema').value,
+            tema: document.getElementById('tema').value, // Envia o texto com as quebras de linha
             metodologia: document.getElementById('metodologia').value,
             acao: idParaEditar ? "EDITAR_RESPOSTA" : "SALVAR_RESPOSTA" 
         };
@@ -258,30 +268,24 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
 
-            // --- A MÁGICA DO RESET INTELIGENTE AQUI ---
             status.className = "sucesso";
             status.innerText = "✅ Salvo com sucesso! Você já pode preencher o próximo.";
             
-            // Limpa apenas os campos de conteúdo
             document.getElementById('dataAula').value = "";
             document.getElementById('qtdAulas').value = "";
             document.getElementById('tema').value = "";
             document.getElementById('metodologia').value = "";
             
-            // Volta o botão ao estado normal
             btn.disabled = false;
             btn.innerText = "Salvar Outro Planejamento";
 
-            // Se for edição, limpa a URL para o próximo salvamento ser um NOVO registro
             if(idParaEditar) {
-                window.history.replaceState({}, document.title, window.location.pathname);
+                e.target.removeAttribute('data-id');
+                e.target.removeAttribute('data-linha');
                 document.getElementById('tituloPagina').innerText = "Planejamento de Aula";
             }
 
-            // Move a tela para o topo para o professor ver a mensagem de sucesso
             window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            // Esconde a mensagem de sucesso após 5 segundos
             setTimeout(() => { status.style.display = "none"; }, 5000);
 
         } catch (error) {

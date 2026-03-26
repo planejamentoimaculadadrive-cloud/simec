@@ -17,6 +17,7 @@
             background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; 
             padding: 15px; cursor: pointer; transition: 0.3s; position: relative;
             border-left: 6px solid #1a73e8;
+            user-select: text; /* Garante que o texto seja selecionável */
         }
         .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: #f9f9f9; }
 
@@ -46,12 +47,10 @@
 
         /* --- CONFIGURAÇÕES DE IMPRESSÃO --- */
         @media print {
-            /* 1. IMPRESSÃO DO PDF OFICIAL (MANTIDA ORIGINAL) */
             body:not(.imprimindo-lista) * { visibility: hidden; }
             body:not(.imprimindo-lista) #printableArea, body:not(.imprimindo-lista) #printableArea * { visibility: visible; }
             body:not(.imprimindo-lista) #printableArea { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
 
-            /* 2. IMPRESSÃO DA LISTA DE CARDS (NOVA FUNÇÃO) */
             body.imprimindo-lista * { visibility: visible; }
             body.imprimindo-lista .card-acoes, 
             body.imprimindo-lista header, 
@@ -129,7 +128,8 @@
                 const dataFormatada = reg.data ? new Date(reg.data).toLocaleDateString('pt-BR') : "---";
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.onclick = (e) => {
+                
+                card.ondblclick = (e) => {
                     if(!e.target.closest('.card-acoes')) {
                         card.classList.toggle('aberto');
                     }
@@ -161,16 +161,18 @@
         } catch (e) { document.getElementById('statusBusca').innerText = "Erro ao carregar."; }
     }
 
-    // --- NOVA FUNÇÃO: IMPRIMIR LISTA DE CARDS ---
     function imprimirListaCards() {
         document.body.classList.add('imprimindo-lista');
         window.print();
         setTimeout(() => { document.body.classList.remove('imprimindo-lista'); }, 1000);
     }
 
-    // --- FUNÇÕES ORIGINAIS MANTIDAS ---
+    // --- MUDANÇA REALIZADA AQUI: Persistência via LocalStorage ---
     function editarRegistro(reg) {
-        window.location.href = `Formulario.html?idParaEditar=${reg.id}&linha=${reg.linha}`;
+        // Salva os dados completos do card no LocalStorage
+        localStorage.setItem('dadosEdicao', JSON.stringify(reg));
+        // Redireciona para o formulário
+        window.location.href = "Formulario.html";
     }
 
     async function excluir(linha, tema) {
@@ -198,7 +200,6 @@
         document.getElementById("statusBusca").style.display = achou ? "none" : "block";
     }
 
-    // --- SUA FUNÇÃO PDF ORIGINAL (IDENTIDADE VISUAL PRESERVADA) ---
     function gerarPDF(reg) {
         const logos = {
             "EMEIF MARIA MADALENA TORRES DANTAS": "https://lh3.googleusercontent.com/d/1K-Ih0PBzwMzmQXB7lWTZLQIZVifViHfL",
