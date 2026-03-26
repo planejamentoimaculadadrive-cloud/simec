@@ -108,7 +108,7 @@
     window.onload = carregarDados;
 
     async function carregarDados() {
-        if(!nomeProfessor) { window.location.href = "index.html"; return; }
+        if(!nomeProfessor) { window.location.href = "Index.html"; return; }
         try {
             const res = await fetch(`${URL_SCRIPT}?getRegistros=true&professor=${nomeProfessor}`);
             let registros = await res.json();

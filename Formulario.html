@@ -91,7 +91,7 @@
     let nomeProfessor = localStorage.getItem('nomeProfessor');
 
     window.onload = async () => {
-        if(!nomeProfessor || !configPrivada) { window.location.href = "index.html"; return; }
+        if(!nomeProfessor || !configPrivada) { window.location.href = "Index.html"; return; }
         
         document.getElementById('infoProf').innerText = "👤 " + nomeProfessor;
         document.getElementById('infoEscola').innerText = "🏫 " + configPrivada.escola;
