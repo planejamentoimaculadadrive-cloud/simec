@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Planejamento Pedagógico 2026</title>
     <style>
-        /* MANTIDO SEU CSS ORIGINAL */
+        /* MANTIDO TODO O SEU ESTILO ORIGINAL */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
         .container { background: #fff; max-width: 600px; margin: 0 auto; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -22,14 +22,22 @@
         .erro { background: #fce8e6; color: #d93025; display: block !important; border: 1px solid #d93025; }
         .btn-voltar-topo { text-decoration: none; color: #1a73e8; font-weight: bold; display: inline-block; margin-bottom: 10px; }
         
-        /* Ajuste específico para o novo campo de Tema */
         #tema { resize: vertical; min-height: 80px; margin-bottom: 15px; font-family: inherit; }
+
+        #habilidadesContainer { 
+            background: white; border: 1px solid #ccc; border-radius: 8px; 
+            padding: 10px; max-height: 200px; overflow-y: auto; margin-top: 5px;
+        }
+        .habilidade-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .habilidade-item:last-child { border-bottom: none; }
+        .habilidade-item input { width: auto; margin-top: 4px; cursor: pointer; }
+        .habilidade-item label { font-weight: normal; font-size: 13px; margin: 0; cursor: pointer; line-height: 1.4; }
     </style>
 </head>
 <body>
 
 <div style="max-width: 600px; margin: 0 auto;">
-    <a href="Painel.html" class="btn-voltar-topo">⬅️ Voltar📉Painel</a>
+    <a href="Painel.html" class="btn-voltar-topo">⬅️ Voltar Painel 🖥️</a>
 </div>
 
 <div class="container">
@@ -69,17 +77,20 @@
             <select id="pratica" onchange="filtrarObjetos()" required style="margin-bottom: 15px;"><option value="">Aguardando...</option></select>
             <label>Objetos de Conhecimento</label>
             <select id="objeto" onchange="filtrarHabilidades()" required style="margin-bottom: 15px;"><option value="">Aguardando...</option></select>
-            <label>Habilidades BNCC</label>
-            <select id="habilidade" required><option value="">Aguardando...</option></select>
+            
+            <label>Habilidades BNCC (Marque as desejadas)</label>
+            <div id="habilidadesContainer">
+                <span style="font-size: 12px; color: #888;">Selecione o Objeto primeiro...</span>
+            </div>
         </div>
 
         <label>Tema / Subtema</label>
-        <textarea id="tema" rows="3" required placeholder="Digite o tema e use Enter para separar subtemas..."></textarea>
+        <textarea id="tema" rows="3" required placeholder="Digite o tema..."></textarea>
         
         <label>Sugestões Metodológicas</label>
         <textarea id="metodologia" rows="4" required></textarea>
 
-        <button type="submit" id="btnSalvar">Salvar Planejamento</button>
+        <button type="submit" id="btnSalvar">💾 Salvar Planejamento</button>
         <div id="status"></div>
     </form>
 </div>
@@ -91,7 +102,7 @@
     let nomeProfessor = localStorage.getItem('nomeProfessor');
 
     window.onload = async () => {
-        if(!nomeProfessor || !configPrivada) { window.location.href = "Index.html"; return; }
+        if(!nomeProfessor || !configPrivada) { window.location.href = "index.html"; return; }
         
         document.getElementById('infoProf').innerText = "👤 " + nomeProfessor;
         document.getElementById('infoEscola').innerText = "🏫 " + configPrivada.escola;
@@ -107,62 +118,67 @@
             selArea.innerHTML = '<option value="">-- Selecione a Área --</option>';
             areas.forEach(a => selArea.innerHTML += `<option value="${a}">${a}</option>`);
 
-            const dadosParaEditar = JSON.parse(localStorage.getItem('dadosEdicao'));
-            if (dadosParaEditar) {
-                preencherCamposEdicao(dadosParaEditar);
-                localStorage.removeItem('dadosEdicao');
-            } else {
-                const urlParams = new URLSearchParams(window.location.search);
-                const idParaEditar = urlParams.get('idParaEditar');
-                if (idParaEditar) { carregarEdicao(idParaEditar); }
+            const dadosRecuperados = JSON.parse(localStorage.getItem('dadosEdicao'));
+            if (dadosRecuperados && dadosRecuperados.id) {
+                await buscarEPreencher(dadosRecuperados.id);
+                localStorage.removeItem('dadosEdicao'); 
             }
-
         } catch (e) { console.error(e); }
     };
 
-    function preencherCamposEdicao(d) {
-        document.getElementById('tituloPagina').innerText = "✏️ Editar Registro";
+    async function buscarEPreencher(id) {
         const btn = document.getElementById('btnSalvar');
-        btn.innerText = "Sincronizando BNCC...";
         btn.disabled = true;
+        btn.innerText = "Buscando dados na planilha... aguarde";
 
-        if (d.data) {
-            let dataBruta = d.data.split('T')[0];
-            document.getElementById('dataAula').value = dataBruta;
+        try {
+            const response = await fetch(`${URL_SCRIPT}?getRegistroUnico=true&id=${id}`);
+            const d = await response.json();
+
+            if (d && !d.status) {
+                if (d.data) document.getElementById('dataAula').value = new Date(d.data).toISOString().split('T')[0];
+                document.getElementById('qtdAulas').value = d.aulas || "";
+                document.getElementById('tema').value = d.tema || "";
+                document.getElementById('metodologia').value = d.metodologia || "";
+
+                const setSelect = async (idSel, valor) => {
+                    const el = document.getElementById(idSel);
+                    return new Promise(resolve => {
+                        let t = 0;
+                        const inv = setInterval(() => {
+                            if (Array.from(el.options).some(o => o.value === valor)) {
+                                el.value = valor;
+                                el.dispatchEvent(new Event('change'));
+                                clearInterval(inv);
+                                resolve();
+                            }
+                            if (t++ > 25) { clearInterval(inv); resolve(); }
+                        }, 200);
+                    });
+                };
+
+                await setSelect('area', d.area);
+                await setSelect('serie', d.serie);
+                await setSelect('pratica', d.pratica);
+                await setSelect('objeto', d.objeto);
+
+                if(d.habilidade) {
+                    const lista = d.habilidade.split(' | ');
+                    document.querySelectorAll('#habilidadesContainer input').forEach(cb => {
+                        if(lista.includes(cb.value)) cb.checked = true;
+                    });
+                }
+
+                document.getElementById('formPlanejamento').setAttribute('data-id', d.id);
+                document.getElementById('formPlanejamento').setAttribute('data-linha', d.linha);
+                document.getElementById('tituloPagina').innerText = "📝 Editar Registro";
+                btn.innerText = "Atualizar Planejamento";
+            }
+        } catch (err) {
+            alert("Erro ao buscar dados para edição.");
+        } finally {
+            btn.disabled = false;
         }
-        document.getElementById('qtdAulas').value = d.aulas || "";
-        
-        // Carrega o Tema (agora Textarea) mantendo as quebras de linha
-        document.getElementById('tema').value = d.tema || "";
-        document.getElementById('metodologia').value = d.metodologia || "";
-
-        setTimeout(() => {
-            const disp = (idCampo, valor) => { 
-                const el = document.getElementById(idCampo); 
-                if(el) { el.value = valor; el.dispatchEvent(new Event('change')); }
-            };
-            disp('area', d.area);
-            setTimeout(() => { disp('serie', d.serie);
-                setTimeout(() => { disp('pratica', d.pratica);
-                    setTimeout(() => { disp('objeto', d.objeto);
-                        setTimeout(() => { 
-                            document.getElementById('habilidade').value = d.habilidade; 
-                            btn.innerText = "Atualizar Planejamento";
-                            btn.disabled = false;
-                            document.getElementById('formPlanejamento').setAttribute('data-id', d.id || "");
-                            document.getElementById('formPlanejamento').setAttribute('data-linha', d.linha || "");
-                        }, 150);
-                    }, 150);
-                }, 150);
-            }, 150);
-        }, 300);
-    }
-
-    async function carregarEdicao(id) {
-        const res = await fetch(`${URL_SCRIPT}?getRegistros=true&professor=${nomeProfessor}`);
-        const registros = await res.json();
-        const d = registros.find(r => r.id === id);
-        if (d) preencherCamposEdicao(d);
     }
 
     function filtrarSeries() {
@@ -197,34 +213,31 @@
         const serie = document.getElementById('serie').value;
         const pratica = document.getElementById('pratica').value;
         const objeto = document.getElementById('objeto').value;
-        const selHabil = document.getElementById('habilidade');
-        selHabil.innerHTML = '<option value="">-- Selecione a Habilidade --</option>';
+        const container = document.getElementById('habilidadesContainer');
+        container.innerHTML = ''; 
         const filtradas = bancoBNCC.filter(i => i.area === area && i.serie === serie && i.pratica === pratica && i.objeto === objeto);
-        filtradas.forEach(item => {
-            let opt = document.createElement('option');
-            opt.value = item.habilidade; opt.innerHTML = item.habilidade;
-            selHabil.appendChild(opt);
+        if(filtradas.length === 0) {
+            container.innerHTML = '<span style="font-size: 12px; color: #888;">Nenhuma habilidade encontrada.</span>';
+            return;
+        }
+        filtradas.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'habilidade-item';
+            div.innerHTML = `<input type="checkbox" id="habil_${index}" value="${item.habilidade}">
+                             <label for="habil_${index}">${item.habilidade}</label>`;
+            container.appendChild(div);
         });
     }
     function limparCamposAbaixo(campo) {
         if(campo === 'serie') document.getElementById('pratica').innerHTML = '<option value="">Aguardando...</option>';
         if(campo === 'pratica' || campo === 'serie') document.getElementById('objeto').innerHTML = '<option value="">Aguardando...</option>';
-        document.getElementById('habilidade').innerHTML = '<option value="">Aguardando...</option>';
+        document.getElementById('habilidadesContainer').innerHTML = '<span style="font-size: 12px; color: #888;">Selecione o Objeto primeiro...</span>';
     }
 
     document.getElementById('formPlanejamento').onsubmit = async (e) => {
         e.preventDefault();
-
-        const dataInput = document.getElementById('dataAula').value;
-        const dataSelecionada = new Date(dataInput + 'T12:00:00');
-        const hoje = new Date();
-        hoje.setHours(0,0,0,0);
-        const diffDias = Math.ceil((dataSelecionada - hoje) / (1000 * 60 * 60 * 24));
-
-        if (diffDias < -30 || diffDias > 15) {
-            alert("⚠️ BLOQUEIO DE DATA: Você só pode registrar entre 15 dias atrás e 15 dias à frente.");
-            return;
-        }
+        const marcadas = Array.from(document.querySelectorAll('#habilidadesContainer input:checked')).map(cb => cb.value).join(' | ');
+        if(!marcadas) { alert("Marque ao menos uma habilidade!"); return; }
 
         const btn = document.getElementById('btnSalvar');
         const status = document.getElementById('status');
@@ -234,7 +247,7 @@
         btn.disabled = true;
         btn.innerText = "Salvando...";
         status.className = "";
-        status.innerText = "Enviando dados para a planilha...";
+        status.innerText = "Enviando para a planilha...";
         status.style.display = "block";
 
         const dados = {
@@ -245,14 +258,14 @@
             turno: configPrivada.turno,
             turma: configPrivada.turma,
             bimestre: configPrivada.bimestre,
-            data: dataInput,
+            data: document.getElementById('dataAula').value,
             aulas: document.getElementById('qtdAulas').value,
             area: document.getElementById('area').value,
             serie: document.getElementById('serie').value,
             pratica: document.getElementById('pratica').value,
             objeto: document.getElementById('objeto').value,
-            habilidade: document.getElementById('habilidade').value,
-            tema: document.getElementById('tema').value, // Envia o texto com as quebras de linha
+            habilidade: marcadas,
+            tema: document.getElementById('tema').value,
             metodologia: document.getElementById('metodologia').value,
             acao: idParaEditar ? "EDITAR_RESPOSTA" : "SALVAR_RESPOSTA" 
         };
@@ -261,38 +274,19 @@
         for (const key in dados) { formData.append(key, dados[key]); }
 
         try {
-            await fetch(URL_SCRIPT, { 
-                method: "POST", 
-                body: formData,
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-
+            await fetch(URL_SCRIPT, { method: "POST", body: formData, mode: 'no-cors' });
             status.className = "sucesso";
-            status.innerText = "✅ Salvo com sucesso! Você já pode preencher o próximo.";
+            status.innerText = idParaEditar ? "✅ Alteração Salva!" : "✅ Salvo com sucesso!";
             
-            document.getElementById('dataAula').value = "";
-            document.getElementById('qtdAulas').value = "";
-            document.getElementById('tema').value = "";
-            document.getElementById('metodologia').value = "";
+            // REMOVIDO O RESET(): Agora o formulário mantém os dados na tela como na imagem
             
             btn.disabled = false;
-            btn.innerText = "Salvar Outro Planejamento";
-
-            if(idParaEditar) {
-                e.target.removeAttribute('data-id');
-                e.target.removeAttribute('data-linha');
-                document.getElementById('tituloPagina').innerText = "Planejamento de Aula";
-            }
-
+            btn.innerText = idParaEditar ? "Atualizar Novamente" : "💾Salvar Novo Planejamento"; 
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(() => { status.style.display = "none"; }, 5000);
-
         } catch (error) {
-            status.className = "erro";
-            status.innerText = "❌ Erro de conexão. Verifique o Script.";
+            status.className = "erro"; status.innerText = "❌ Erro ao salvar.";
             btn.disabled = false;
-            btn.innerText = "Tentar Salvar Novamente";
         }
     };
 </script>
